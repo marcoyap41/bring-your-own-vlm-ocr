@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Environment variables
+.env
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# Temporary files
+temp_uploaded_image.jpg
