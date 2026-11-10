@@ -14,7 +14,7 @@ import urllib.request
 from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request, stream_with_context
 from flask_cors import CORS
-from openai import APIError, OpenAI, RateLimitError
+from openai import APIConnectionError, APIError, OpenAI, RateLimitError
 from PIL import Image, ImageFilter, ImageOps
 
 load_dotenv()
@@ -304,6 +304,8 @@ def get_client(base_url: str | None = None, api_key: str | None = None) -> OpenA
     return OpenAI(
         base_url=resolved_url,
         api_key=resolved_key,
+        timeout=60.0,
+        max_retries=2,
     )
 
 
@@ -378,10 +380,10 @@ def create_completion(client: OpenAI, messages: list[dict], stream: bool, model_
                     kwargs.pop("stream_options", None)
                     return client.chat.completions.create(**kwargs)
             return client.chat.completions.create(**kwargs)
-        except RateLimitError:
+        except (RateLimitError, APIConnectionError) as e:
             if attempt == 2:
                 raise
-            time.sleep(2.0 * (attempt + 1))
+            time.sleep(1.0 * (attempt + 1))
 
 
 def extract_usage(usage_obj, elapsed_sec: float | None = None, fallback_text: str = "") -> dict:

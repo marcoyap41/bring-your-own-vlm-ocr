@@ -519,27 +519,24 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="brand">
-          <div className="logo">OCR</div>
+          <div className="logo" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              <line x1="7" y1="9" x2="17" y2="9" />
+              <line x1="7" y1="13" x2="14" y2="13" />
+              <line x1="7" y1="17" x2="11" y2="17" />
+            </svg>
+          </div>
           <div>
-            <h1>Bring-Your-Own-VLM OCR</h1>
+            <div className="brand-title-row">
+              <h1>Bring-Your-Own-VLM OCR</h1>
+              <span className="brand-tag">BYOK Vision Engine</span>
+            </div>
             <p>Extract and locate text in images with any OpenAI-compatible Vision-Language Model</p>
           </div>
-        </div>
-        <div
-          className={`status ${
-            health?.status === "ok" && isApiReady
-              ? isDemoMode
-                ? "demo"
-                : "ok"
-              : health
-                ? "bad"
-                : ""
-          }`}
-        >
-          <span className="dot" />
-          {!health && "Connecting..."}
-          {health?.status === "offline" && "Backend offline"}
-          {health?.status === "ok" && (isApiReady ? (isDemoMode ? "Demo API Active" : "Personal API Active") : "API Key Missing")}
         </div>
       </header>
 
@@ -566,7 +563,7 @@ export default function App() {
         <div className="metric-card">
           <div className="metric-row">
             <span className="metric-label">Last Request Usage</span>
-            {usage?.cost !== null && usage?.cost !== undefined && (
+            {!isDemoMode && usage?.cost !== null && usage?.cost !== undefined && (
               <span className="metric-cost-tag">${formatUsd(usage.cost)}</span>
             )}
           </div>
@@ -585,7 +582,7 @@ export default function App() {
         <div className="metric-card">
           <div className="metric-row">
             <span className="metric-label">Session Total</span>
-            {sessionCost > 0 && (
+            {!isDemoMode && sessionCost > 0 && (
               <span className="metric-cost-tag">${formatUsd(sessionCost)}</span>
             )}
           </div>
@@ -895,8 +892,14 @@ export default function App() {
                 </svg>
               </div>
               <h2>Drop an image here</h2>
-              <p>or click to browse / paste with Ctrl+V</p>
-              <span className="formats">JPG / PNG / WEBP</span>
+              <p>
+                or click to browse / paste with <kbd>Ctrl</kbd> + <kbd>V</kbd>
+              </p>
+              <div className="format-pills">
+                <span className="format-pill">JPG</span>
+                <span className="format-pill">PNG</span>
+                <span className="format-pill">WEBP</span>
+              </div>
             </div>
           ) : (
             <>
