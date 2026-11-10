@@ -8,9 +8,9 @@
 
 ## Demo Preview
 
-[![Bring Your Own VLM OCR Demo Preview](https://www.youtube.com/watch?v=Rk0_r3qRCjY)](https://byovlm-ocr.up.railway.app/)
+https://github.com/user-attachments/assets/ce93714a-c44d-4c00-8d5b-bc5c8219e9a0
 
-> *Watch the live video demonstration above or test it yourself [here](https://byovlm-ocr.up.railway.app/).*
+> *Interactive video walkthrough demonstrating live streaming OCR and text spotting. Try it live on [Railway](https://byovlm-ocr.up.railway.app/).*
 
 ---
 
