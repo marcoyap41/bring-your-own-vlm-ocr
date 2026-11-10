@@ -26,7 +26,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Copy python project definition and install dependencies
 COPY pyproject.toml ./
-RUN uv pip install --system --no-cache -r <(uv pip compile pyproject.toml) gunicorn
+RUN uv pip install --system --no-cache -r pyproject.toml gunicorn
 
 # Copy backend source
 COPY backend/ ./backend/

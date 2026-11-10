@@ -35,12 +35,10 @@ _DB_LOCK = threading.Lock()
 
 def is_demo_mode_enabled() -> bool:
     """
-    Demo Mode is only enforced when explicitly enabled via ENABLE_DEMO_MODE=true.
-    When False (default for personal/local self-hosting), server-level .env config
-    is treated as a full unlimited personal instance without 5-request limits.
+    Demo Mode is enabled by default unless ENABLE_DEMO_MODE is explicitly set to false/0.
     """
-    raw = os.getenv("ENABLE_DEMO_MODE", "").strip().lower()
-    return raw in {"1", "true", "yes", "on"}
+    raw = os.getenv("ENABLE_DEMO_MODE", "true").strip().lower()
+    return raw not in {"0", "false", "no", "off"}
 
 FULL_PAGE_PROMPT = (
     "Please output only the text content from the image without any additional "
@@ -171,10 +169,7 @@ def get_client_identifiers() -> tuple[str, str | None]:
     return ip_key, cid_key
 
 
-def get_demo_quota_status() -> dict | None:
-    if not is_demo_mode_enabled():
-        return None
-
+def get_demo_quota_status() -> dict:
     ip_key, cid_key = get_client_identifiers()
     keys = [ip_key] + ([cid_key] if cid_key else [])
     placeholders = ",".join("?" for _ in keys)
@@ -186,7 +181,7 @@ def get_demo_quota_status() -> dict | None:
                 keys,
             ).fetchall()
 
-    used = max((r[0] for r in rows), default=0)
+    used = max((r[0] for r in rows), default=0) if is_demo_mode_enabled() else 0
     return {
         "limit_requests": DEMO_MAX_REQUESTS,
         "used_requests": min(DEMO_MAX_REQUESTS, used),
