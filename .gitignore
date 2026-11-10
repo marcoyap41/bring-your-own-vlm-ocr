@@ -16,5 +16,7 @@ wheels/
 node_modules/
 frontend/dist/
 
-# Temporary files
+# Temporary files & local DB
 temp_uploaded_image.jpg
+*.db
+*.db-journal

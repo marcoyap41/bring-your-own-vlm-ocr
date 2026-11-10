@@ -19,7 +19,7 @@ Most modern OCR solutions lock you into proprietary vendor APIs or rigid local p
 ## Architecture & Tech Stack
 
 - **Backend:** Flask, Flask-CORS, Pillow (EXIF rotation & resize optimization), `openai` Python SDK (Chat Completions API with multimodal payloads).
-- **Frontend:** React 19, Vite, custom SVG interactive bounding box overlay, clipboard integration, live token/request telemetry.
+- **Frontend:** React 19, Vite, custom SVG interactive bounding box overlay, clipboard integration.
 - **Package Manager:** `uv` by Astral for fast, reproducible Python packaging.
 
 ---
@@ -82,7 +82,7 @@ npm run dev
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Returns backend status, active VLM model, base URL, and key configuration status. |
-| `POST` | `/api/ocr/full` | Streams live extracted text tokens and telemetry as `application/x-ndjson`. |
+| `POST` | `/api/ocr/full` | Streams live extracted text tokens as `application/x-ndjson`. |
 | `POST` | `/api/ocr/spotting` | Returns detected text lines, raw model reasoning, and normalized `[x1, y1, x2, y2]` bounding coordinates. |
 
 ---

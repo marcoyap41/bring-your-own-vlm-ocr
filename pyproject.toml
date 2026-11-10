@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ocr2 = "ocr2:main"
+bring-your-own-vlm-ocr = "bring_your_own_vlm_ocr:main"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
