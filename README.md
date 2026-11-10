@@ -1,6 +1,16 @@
 # Bring-Your-Own-VLM OCR (`bring-your-own-vlm-ocr`)
 
 > **A provider-agnostic Vision OCR web application with real-time text streaming and interactive bounding-box text spotting, powered by any OpenAI-compatible Vision-Language Model (VLM).**
+>
+> **Live Demo:** [https://byovlm-ocr.up.railway.app/](https://byovlm-ocr.up.railway.app/)
+
+---
+
+## Demo Preview
+
+[![Bring Your Own VLM OCR Demo Preview](https://www.youtube.com/watch?v=Rk0_r3qRCjY)](https://byovlm-ocr.up.railway.app/)
+
+> *Watch the live video demonstration above or test it yourself [here](https://byovlm-ocr.up.railway.app/).*
 
 ---
 
