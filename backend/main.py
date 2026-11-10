@@ -12,7 +12,7 @@ import time
 import urllib.request
 
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify, request, stream_with_context
+from flask import Flask, Response, jsonify, request, send_from_directory, stream_with_context
 from flask_cors import CORS
 from openai import APIConnectionError, APIError, OpenAI, RateLimitError
 from PIL import Image, ImageFilter, ImageOps
@@ -31,6 +31,16 @@ DEMO_MAX_REQUESTS = 5
 DEMO_MAX_INPUT_TOKENS = 2000
 DB_PATH = os.path.join(os.path.dirname(__file__), "demo_quota.db")
 _DB_LOCK = threading.Lock()
+
+
+def is_demo_mode_enabled() -> bool:
+    """
+    Demo Mode is only enforced when explicitly enabled via ENABLE_DEMO_MODE=true.
+    When False (default for personal/local self-hosting), server-level .env config
+    is treated as a full unlimited personal instance without 5-request limits.
+    """
+    raw = os.getenv("ENABLE_DEMO_MODE", "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
 
 FULL_PAGE_PROMPT = (
     "Please output only the text content from the image without any additional "
@@ -81,12 +91,14 @@ def get_spotting_prompt(model_name: str) -> str:
     return GENERIC_SPOTTING_PROMPT
 
 
-app = Flask(__name__)
+FRONTEND_DIST = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+
+app = Flask(__name__, static_folder=FRONTEND_DIST if os.path.exists(FRONTEND_DIST) else None)
 CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+            "origins": "*",
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["*"],
         }
@@ -159,7 +171,10 @@ def get_client_identifiers() -> tuple[str, str | None]:
     return ip_key, cid_key
 
 
-def get_demo_quota_status() -> dict:
+def get_demo_quota_status() -> dict | None:
+    if not is_demo_mode_enabled():
+        return None
+
     ip_key, cid_key = get_client_identifiers()
     keys = [ip_key] + ([cid_key] if cid_key else [])
     placeholders = ",".join("?" for _ in keys)
@@ -180,7 +195,10 @@ def get_demo_quota_status() -> dict:
     }
 
 
-def consume_demo_quota() -> dict:
+def consume_demo_quota() -> dict | None:
+    if not is_demo_mode_enabled():
+        return None
+
     ip_key, cid_key = get_client_identifiers()
     keys = [ip_key] + ([cid_key] if cid_key else [])
     placeholders = ",".join("?" for _ in keys)
@@ -806,13 +824,14 @@ def stream_events(
 @app.get("/api/health")
 def health():
     base_url, api_key, _, is_custom = get_request_config()
-    key_quota = fetch_openrouter_key_quota(base_url, api_key) if is_custom else None
+    key_quota = fetch_openrouter_key_quota(base_url, api_key) if (is_custom or not is_demo_mode_enabled()) else None
     return jsonify(
         {
             "status": "ok",
             "model": get_model_name(),
             "base_url": get_base_url(),
             "api_key_configured": bool(get_api_key()),
+            "demo_mode_enabled": is_demo_mode_enabled(),
             "demo_quota": get_demo_quota_status(),
             "key_quota": key_quota,
         }
@@ -827,7 +846,7 @@ def ocr_full():
     image = load_uploaded_image(file_storage)
 
     demo_quota = None
-    if not is_custom:
+    if not is_custom and is_demo_mode_enabled():
         image = enforce_demo_token_budget(image, FULL_PAGE_PROMPT, is_spotting=False)
         demo_quota = consume_demo_quota()
 
@@ -846,7 +865,7 @@ def ocr_full():
     except Exception as e:
         raise HttpError(502, f"API error: {e}")
 
-    custom_auth = (base_url, api_key) if is_custom else None
+    custom_auth = (base_url, api_key) if (is_custom or not is_demo_mode_enabled()) else None
 
     def generator():
         try:
@@ -867,14 +886,14 @@ def ocr_spotting():
     prompt = get_spotting_prompt(model_name)
 
     demo_quota = None
-    if not is_custom:
+    if not is_custom and is_demo_mode_enabled():
         image = enforce_demo_token_budget(image, prompt, is_spotting=True)
         demo_quota = consume_demo_quota()
 
     width, height = image.size
     row_energy, edges = compute_edge_map(image)
     # In Demo Mode, cap at 2 strips max so input tokens across the request stay <= 2,000
-    max_strips = 2 if not is_custom else MAX_STRIPS
+    max_strips = 2 if (not is_custom and is_demo_mode_enabled()) else MAX_STRIPS
     strips = split_into_smart_strips(image, row_energy, max_strips_allowed=max_strips)
     num_strips = len(strips)
 
@@ -934,7 +953,7 @@ def ocr_spotting():
 
     deduped = deduplicate_boxes(all_boxes)
     boxes = refine_boxes_sequence(edges, deduped)
-    key_quota = fetch_openrouter_key_quota(base_url, api_key) if is_custom else None
+    key_quota = fetch_openrouter_key_quota(base_url, api_key) if (is_custom or not is_demo_mode_enabled()) else None
 
     return jsonify(
         {
@@ -949,5 +968,18 @@ def ocr_spotting():
     )
 
 
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if FRONTEND_DIST and os.path.exists(FRONTEND_DIST):
+        target = os.path.join(FRONTEND_DIST, path)
+        if path and os.path.exists(target):
+            return send_from_directory(FRONTEND_DIST, path)
+        return send_from_directory(FRONTEND_DIST, "index.html")
+    return jsonify({"status": "Backend running. Build frontend/dist to view UI."})
+
+
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8000, debug=True)
+    port = int(os.getenv("PORT", "8000"))
+    host = "0.0.0.0" if os.getenv("PORT") else "127.0.0.1"
+    app.run(host=host, port=port, debug=not bool(os.getenv("PORT")))

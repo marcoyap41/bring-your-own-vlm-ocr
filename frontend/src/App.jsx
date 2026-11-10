@@ -181,13 +181,16 @@ export default function App() {
   const lineRefs = useRef([]);
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0, moved: false });
 
-  const isDemoMode = apiMode === "demo" || !savedPersonalApi;
-  const activeCustomApi = !isDemoMode ? savedPersonalApi : null;
+  const isServerDemoMode = health?.demo_mode_enabled ?? true;
+  const isDemoMode = isServerDemoMode && (apiMode === "demo" || !savedPersonalApi);
+  const activeCustomApi = (!isServerDemoMode && !savedPersonalApi)
+    ? null
+    : (!isDemoMode ? savedPersonalApi : null);
   const demoBaseUrl = health?.base_url || "https://openrouter.ai/api/v1";
   const demoModel = health?.model || "google/gemma-4-31b-it";
   const activeBaseUrl = activeCustomApi?.baseUrl || demoBaseUrl;
   const activeModel = activeCustomApi?.model || demoModel;
-  const isApiReady = !isDemoMode ? Boolean(activeCustomApi?.apiKey) : Boolean(health?.api_key_configured);
+  const isApiReady = !isDemoMode ? (activeCustomApi?.apiKey ? true : Boolean(health?.api_key_configured)) : Boolean(health?.api_key_configured);
 
   const applyUsage = (usageData) => {
     if (!usageData) return;
